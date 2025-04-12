@@ -18,7 +18,7 @@ Set the following env vars
 version: "3.3"
 
 services:
-  bin-canary:
+  technitium-exporter:
     image: ghcr.io/josephrpalmer/technitium-exporter:latest
     container_name: technitium-exporter
     restart: always
