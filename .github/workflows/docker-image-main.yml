@@ -24,7 +24,7 @@ jobs:
       - name: Tag Docker image for GitHub Container Registry
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        run: docker tag ${{ env.DOCKER_USERNAME }}/technitium-exporter:latest ghcr.io/${{ env.DOCKER_USERNAME }}/bin-canary:latest
+        run: docker tag ${{ env.DOCKER_USERNAME }}/technitium-exporter:latest ghcr.io/${{ env.DOCKER_USERNAME }}/technitium-exporter:latest
       - name: Push Docker image to GitHub Container Registry
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
