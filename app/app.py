@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logging.getLogger("requests").setLevel(logging.WARNING)
 
-version = "0.0.1"
+version = "0.0.2"
 gauges = {}
 
 prom_port = int(os.environ.get('PROM_PORT', 9130))
@@ -94,6 +94,7 @@ def server():
         time.sleep(interval)
 
 def update_gauge(key, value):
+    key = "technitium_dns_{}".format(key)
     if key not in gauges:
         gauges[key] = Gauge(key, 'DNS gauge')
     gauges[key].set(value)
