@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logging.getLogger("requests").setLevel(logging.WARNING)
 
-version = "0.0.3"
+version = "0.0.4"
 gauges = {}
 
 metric_map = {}
@@ -93,8 +93,12 @@ def update_metrics():
 
     logging.info("Total metrics updated: {}".format(count))
 
+
 def server():
 
+    #preload the gauges from midnight
+    get_stats(datetime.now().replace(hour=0, minute=0, second=0).isoformat(timespec='seconds'), datetime.now().isoformat(timespec='seconds'))
+    logging.info("Preloaded metrics from midnight")
     while True:
         start_time = (datetime.now() - timedelta(seconds=interval)).isoformat(timespec='seconds')
         end_time = datetime.now().isoformat(timespec='seconds')
