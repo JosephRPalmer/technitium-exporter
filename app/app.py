@@ -17,7 +17,7 @@ gauges = {}
 
 prom_port = int(os.environ.get('PROM_PORT', 9130))
 dns_api_key = os.environ.get('DNS_API_KEY')
-dns_host = os.environ.get('DNS_HOST', 'localhost')
+dns_host = os.environ.get('DNS_HOST', '127.0.0.1')
 dns_ui_port = int(os.environ.get('DNS_PORT', 5380))
 interval = int(os.environ.get('INTERVAL', 60))
 

@@ -25,6 +25,8 @@ services:
     environment:
       - DNS_HOST=127.0.0.1
       - DNS_API_KEY=abc123
+    ports:
+      - 9130:9130
 
 
 ```
