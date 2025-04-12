@@ -12,10 +12,11 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logging.getLogger("requests").setLevel(logging.WARNING)
 
-version = "0.0.4"
+version = "0.0.5"
 gauges = {}
 
 metric_map = {}
+date_tracker = datetime.now().isoformat(timespec='seconds')
 
 prom_port = int(os.environ.get('PROM_PORT', 9130))
 dns_api_key = os.environ.get('DNS_API_KEY')
@@ -97,11 +98,16 @@ def update_metrics():
 def server():
 
     #preload the gauges from midnight
-    get_stats(datetime.now().replace(hour=0, minute=0, second=0).isoformat(timespec='seconds'), datetime.now().isoformat(timespec='seconds'))
+    date_tracker = datetime.now().isoformat(timespec='seconds')
+    get_stats(datetime.now().replace(hour=0, minute=0, second=0).isoformat(timespec='seconds'), date_tracker)
     logging.info("Preloaded metrics from midnight")
+
+    time.sleep(interval)
+
     while True:
-        start_time = (datetime.now() - timedelta(seconds=interval)).isoformat(timespec='seconds')
+        start_time = (date_tracker)
         end_time = datetime.now().isoformat(timespec='seconds')
+        date_tracker = end_time
 
         get_stats(start_time, end_time)
         update_metrics()
