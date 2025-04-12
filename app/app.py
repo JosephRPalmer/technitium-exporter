@@ -6,14 +6,16 @@ import requests
 import threading
 import time
 from http.server import HTTPServer
-
+from dns_metric import dns_metric
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logging.getLogger("requests").setLevel(logging.WARNING)
 
-version = "0.0.2"
+version = "0.0.3"
 gauges = {}
+
+metric_map = {}
 
 prom_port = int(os.environ.get('PROM_PORT', 9130))
 dns_api_key = os.environ.get('DNS_API_KEY')
@@ -56,24 +58,18 @@ def get_stats(start_time, end_time):
         if response.status_code == 200:
             data = response.json()
             logging.debug("Fetched stats from DNS server: %s", data)
-            # Update Prometheus gauges with the fetched data['response']['stats']
-            update_gauge('totalQueries', data['response']['stats']['totalQueries'])
-            update_gauge('totalNoError', data['response']['stats']['totalNoError'])
-            update_gauge('totalServerFailure', data['response']['stats']['totalServerFailure'])
-            update_gauge('totalNxDomain', data['response']['stats']['totalNxDomain'])
-            update_gauge('totalRefused', data['response']['stats']['totalRefused'])
-            update_gauge('totalAuthoritative', data['response']['stats']['totalAuthoritative'])
-            update_gauge('totalRecursive', data['response']['stats']['totalRecursive'])
-            update_gauge('totalCached', data['response']['stats']['totalCached'])
-            update_gauge('totalBlocked', data['response']['stats']['totalBlocked'])
-            update_gauge('totalDropped', data['response']['stats']['totalDropped'])
-            update_gauge('totalClients', data['response']['stats']['totalClients'])
-            update_gauge('zones', data['response']['stats']['zones'])
-            update_gauge('cachedEntries', data['response']['stats']['cachedEntries'])
-            update_gauge('allowedZones', data['response']['stats']['allowedZones'])
-            update_gauge('blockedZones', data['response']['stats']['blockedZones'])
-            update_gauge('allowListZones', data['response']['stats']['allowListZones'])
-            update_gauge('blockListZones', data['response']['stats']['blockListZones'])
+
+            for key, value in data['response']['stats'].items():
+                if key not in metric_map:
+                    metric_map[key] = dns_metric(key, value, value, datetime.now())
+                    logging.info("Created new metric: %s", key)
+                else:
+                    if metric_map[key].last_updated.date() != datetime.now().date():
+                        metric_map[key].total_today = 0
+                    metric_map[key].current_value = value
+                    metric_map[key].total_today += value
+                    metric_map[key].last_updated = datetime.now()
+                    logging.debug("Updated existing metric: %s", key)
         else:
             logging.error("Failed to fetch stats from DNS server: %s", response.status_code)
             return None
@@ -81,16 +77,32 @@ def get_stats(start_time, end_time):
         logging.error("Error fetching stats from DNS server: %s", str(e))
         return None
 
-def server():
+def update_metrics():
+    count=0
+    for key, metric in metric_map.items():
+        if metric.current_value != 0:
+            update_gauge(key, metric.current_value)
+            logging.debug("Updated gauge for %s: %s", key, metric.current_value)
+            count += 1
+        else:
+            logging.debug("No update for %s: %s", key, metric.current_value)
 
+        if metric.total_today != 0:
+            update_gauge(key + "_today", metric.total_today)
+            logging.debug("Updated total_today for %s: %s", key, metric.total_today)
+
+    logging.info("Total metrics updated: {}".format(count))
+
+def server():
 
     while True:
         start_time = (datetime.now() - timedelta(seconds=interval)).isoformat(timespec='seconds')
         end_time = datetime.now().isoformat(timespec='seconds')
 
         get_stats(start_time, end_time)
+        update_metrics()
+        logging.debug("Updated metrics for all keys")
 
-        # Sleep for 5 minutes before fetching stats again
         time.sleep(interval)
 
 def update_gauge(key, value):
